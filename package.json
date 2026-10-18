@@ -1,0 +1,7 @@
+{
+  "name": "license-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Server-side license check for portals managed by license_manager.html (Turso)",
+  "engines": { "node": ">=18" }
+}

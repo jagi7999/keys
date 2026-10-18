@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>License Manager</title>
+<style>
+:root{
+  --bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mute:#64748b;--line:#e2e8f0;
+  --brand:#4f46e5;--brand-d:#4338ca;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--blue:#2563eb;--purple:#7c3aed;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid #c7d2fe;border-color:var(--brand)}
+label{display:block;font-size:12px;font-weight:600;color:var(--mute);margin:0 0 4px}
+.hidden{display:none!important}
+
+/* login */
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e1b4b,#4f46e5);padding:16px}
+.login-card{background:#fff;border-radius:20px;padding:32px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-card h1{margin:8px 0 4px;font-size:22px}
+.login-card p{color:var(--mute);margin:0 0 18px}
+.logo{font-size:44px}
+
+/* layout */
+#app{display:flex;min-height:100vh}
+aside{width:230px;background:#0f172a;color:#cbd5e1;padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+aside .brand{color:#fff;font-weight:700;font-size:17px;padding:6px 10px 16px;display:flex;gap:8px;align-items:center}
+aside button.nav{background:none;border:0;color:inherit;text-align:left;padding:10px 12px;border-radius:10px;display:flex;gap:10px;align-items:center}
+aside button.nav:hover{background:#1e293b}
+aside button.nav.on{background:var(--brand);color:#fff}
+aside .sp{flex:1}
+main{flex:1;padding:22px;min-width:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.top h2{margin:0;font-size:22px}
+.conn{font-size:12px;padding:4px 10px;border-radius:20px;background:#fee2e2;color:var(--bad)}
+.conn.ok{background:#dcfce7;color:var(--ok)}
+
+/* ui */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.grid{display:grid;gap:14px}
+.stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:16px}
+.stat .n{font-size:28px;font-weight:700}
+.stat .l{color:var(--mute);font-size:12px}
+.btn{border:0;border-radius:10px;padding:9px 14px;background:var(--brand);color:#fff;font-weight:600}
+.btn:hover{background:var(--brand-d)}
+.btn.sec{background:#e2e8f0;color:var(--ink)}
+.btn.sec:hover{background:#cbd5e1}
+.btn.red{background:var(--bad)}
+.btn.sm{padding:5px 9px;font-size:12px;border-radius:8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>*{flex:0 0 auto}
+.row .grow{flex:1 1 160px;min-width:120px}
+.tbl-wrap{overflow:auto;border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--mute);background:#f8fafc;position:sticky;top:0}
+td.wrap{white-space:normal;max-width:320px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.5px}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.b-active{background:#dcfce7;color:var(--ok)}.b-unused{background:#e2e8f0;color:#475569}
+.b-expired{background:#fef3c7;color:var(--warn)}.b-revoked{background:#fee2e2;color:var(--bad)}
+.b-trial{background:#ede9fe;color:var(--purple)}.b-paid{background:#dbeafe;color:var(--blue)}
+.b-on{background:#dcfce7;color:var(--ok)}.b-off{background:#fee2e2;color:var(--bad)}
+.acts{display:flex;gap:5px;flex-wrap:wrap}
+.muted{color:var(--mute)}
+.empty{padding:30px;text-align:center;color:var(--mute)}
+a{color:var(--brand)}
+pre{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:12px;overflow:auto;max-height:420px;font-size:12px;line-height:1.5;margin:0}
+.note{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 12px;font-size:13px}
+
+/* modal + toast */
+#modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:14px;z-index:50}
+.modal-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:92vh;overflow:auto}
+.modal-box h3{margin:0 0 14px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:30px;z-index:99;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.keybox{background:#f1f5f9;border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,monospace;font-size:15px;line-height:1.9;max-height:260px;overflow:auto}
+
+@media(max-width:800px){
+  #app{flex-direction:column}
+  aside{width:100%;height:auto;position:static;flex-direction:row;overflow-x:auto;padding:8px}
+  aside .brand,aside .sp{display:none}
+  aside button.nav{white-space:nowrap}
+  main{padding:14px}
+  .form-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <div class="logo">🔐</div>
+    <h1>License Manager</h1>
+    <p>Admin sign-in</p>
+    <input type="password" id="loginPass" placeholder="Admin password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn" style="width:100%;margin-top:12px" onclick="doLogin()">Sign in</button>
+    <p id="loginErr" style="color:var(--bad);margin:10px 0 0;font-size:13px"></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand">🔐 License Manager</div>
+    <button class="nav" data-p="dashboard">📊 Dashboard</button>
+    <button class="nav" data-p="licenses">🔑 Licenses</button>
+    <button class="nav" data-p="portals">🌐 Portals</button>
+    <button class="nav" data-p="integration">🧩 Integration</button>
+    <button class="nav" data-p="activity">📜 Activity</button>
+    <button class="nav" data-p="settings">⚙️ Settings</button>
+    <div class="sp"></div>
+    <button class="nav" onclick="logout()">🚪 Sign out</button>
+  </aside>
+  <main>
+    <div class="top">
+      <h2 id="pageTitle">Dashboard</h2>
+      <div class="row">
+        <span id="connBadge" class="conn">Not connected</span>
+        <button class="btn sec sm" onclick="refresh()">⟳ Refresh</button>
+      </div>
+    </div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<div id="modal" class="hidden" onclick="if(event.target===this)closeModal()"><div class="modal-box" id="modalBox"></div></div>
+<div id="toast" class="hidden"></div>
+
+<script>
+/* ============ DEFAULT VALUES (edit here or in Settings) ============ */
+const DEFAULTS = {
+  dbUrl: 'libsql://license-manager-yourorg.turso.io',   // Turso database URL
+  dbToken: '',                                            // Turso auth token (admin use only)
+  apiUrl: 'https://license-api-yourorg.vercel.app/api/license', // License API endpoint (see license-api/README.md)
+  adminPass: 'admin123',                                  // first-login admin password
+  trialDays: 7,
+  maxDevices: 1
+};
+const DEFAULT_PORTALS = [
+  {name:'Bill Creator',          code:'BILL',      url:'https://billcreator.vercel.app/'},
+  {name:'Water Bill Phase 1',    code:'WATER',     url:'https://water-bill-phase1.vercel.app/v1.html'},
+  {name:'Flat Maintenance',      code:'MAINT',     url:'https://flat-maintenance-tau.vercel.app/'},
+  {name:'Nethravathi Members',   code:'MEMBERS',   url:'https://nethravathi-apartment-members.vercel.app/'},
+  {name:'Parking Register',      code:'PARKING',   url:'https://parkingregister.vercel.app/'},
+  {name:'Expense Tracker',       code:'EXPENSE',   url:'https://adv-expense-tracker.vercel.app/'},
+  {name:'Complaint Board',       code:'COMPLAINT', url:'https://complaint-board-theta.vercel.app/'}
+];
+
+/* ============ SETTINGS STORE ============ */
+const LS = {
+  get dbUrl(){return localStorage.getItem('lm_url')||DEFAULTS.dbUrl},
+  get dbToken(){return localStorage.getItem('lm_token')||DEFAULTS.dbToken},
+  get apiUrl(){return localStorage.getItem('lm_api')||DEFAULTS.apiUrl},
+  get pass(){return localStorage.getItem('lm_pass')||DEFAULTS.adminPass}
+};
+const httpUrl = u => u.trim().replace(/^libsql:\/\//,'https://').replace(/\/+$/,'');
+
+/* ============ TURSO (HTTP pipeline API) ============ */
+function typed(v){
+  if(v===null||v===undefined) return {type:'null'};
+  if(typeof v==='number') return Number.isInteger(v)?{type:'integer',value:String(v)}:{type:'float',value:v};
+  return {type:'text',value:String(v)};
+}
+function cell(c){
+  if(!c||c.type==='null') return null;
+  if(c.type==='integer'||c.type==='float') return Number(c.value);
+  return c.value;
+}
+async function dbMany(list){
+  if(!LS.dbToken) throw new Error('Turso token missing — add it in Settings');
+  const body={requests:[...list.map(s=>({type:'execute',stmt:{sql:s.sql,args:(s.args||[]).map(typed)}})),{type:'close'}]};
+  const res=await fetch(httpUrl(LS.dbUrl)+'/v2/pipeline',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+LS.dbToken,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error('Turso '+res.status+': '+(await res.text()).slice(0,200));
+  const j=await res.json();
+  return j.results.slice(0,list.length).map(r=>{
+    if(r.type!=='ok') throw new Error((r.error&&r.error.message)||'Query failed');
+    const rs=r.response.result;
+    const names=rs.cols.map(c=>c.name);
+    return rs.rows.map(row=>{const o={};names.forEach((n,i)=>o[n]=cell(row[i]));return o});
+  });
+}
+const db = async (sql,args)=> (await dbMany([{sql,args}]))[0];
+
+const SCHEMA=[
+ `CREATE TABLE IF NOT EXISTS portals(
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   name TEXT NOT NULL, code TEXT NOT NULL UNIQUE, url TEXT,
+   enabled INTEGER DEFAULT 1, created_at TEXT)`,
+ `CREATE TABLE IF NOT EXISTS licenses(
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   license_key TEXT NOT NULL UNIQUE, portal_id INTEGER NOT NULL,
+   customer TEXT, phone TEXT, email TEXT,
+   type TEXT DEFAULT 'trial', duration_days INTEGER DEFAULT 7,
+   status TEXT DEFAULT 'active', max_devices INTEGER DEFAULT 1,
+   activated_at TEXT, expires_at TEXT, notes TEXT,
+   created_at TEXT, revoked_at TEXT, revoke_reason TEXT)`,
+ `CREATE TABLE IF NOT EXISTS activations(
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   license_id INTEGER NOT NULL, device_id TEXT NOT NULL,
+   first_seen TEXT, last_seen TEXT)`,
+ `CREATE TABLE IF NOT EXISTS audit(
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   ts TEXT, action TEXT, detail TEXT)`
+];
+async function initDb(){
+  await dbMany(SCHEMA.map(sql=>({sql})));
+  const c=await db('SELECT COUNT(*) AS n FROM portals');
+  if(!c[0].n) await seedPortals();
+}
+async function seedPortals(){
+  const now=new Date().toISOString();
+  await dbMany(DEFAULT_PORTALS.map(p=>({
+    sql:'INSERT OR IGNORE INTO portals(name,code,url,enabled,created_at) VALUES(?,?,?,1,?)',
+    args:[p.name,p.code,p.url,now]
+  })));
+}
+const auditStmt=(action,detail)=>({sql:'INSERT INTO audit(ts,action,detail) VALUES(?,?,?)',args:[new Date().toISOString(),action,detail]});
+
+/* ============ HELPERS ============ */
+const $=id=>document.getElementById(id);
+const val=id=>$(id).value.trim();
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=d=>d?new Date(d).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+const fmtD=d=>d?new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';
+function toast(m){const t=$('toast');t.textContent=m;t.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hidden'),2600)}
+function openModal(html){$('modalBox').innerHTML=html;$('modal').classList.remove('hidden')}
+function closeModal(){$('modal').classList.add('hidden')}
+function copy(text){
+  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>toast('Copied'),()=>{
+    const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();toast('Copied');
+  });
+}
+function genKey(){
+  const a=new Uint32Array(4);crypto.getRandomValues(a);
+  return Array.from(a,n=>String(n%10000).padStart(4,'0')).join('-');
+}
+function statusOf(l){
+  if(l.status==='revoked') return 'revoked';
+  if(!l.activated_at) return 'unused';
+  if(l.expires_at && new Date(l.expires_at)<new Date()) return 'expired';
+  return 'active';
+}
+function remaining(l){
+  if(l.status==='revoked') return 'Revoked';
+  if(!l.activated_at) return l.duration_days>0?l.duration_days+' day(s) after first use':'Lifetime';
+  if(!l.expires_at) return 'Lifetime';
+  const d=Math.ceil((new Date(l.expires_at)-new Date())/864e5);
+  return d>=0?d+' day(s) left':'Expired '+Math.abs(d)+' day(s) ago';
+}
+const badge=(cls,txt)=>`<span class="badge ${cls}">${esc(txt)}</span>`;
+
+/* ============ STATE ============ */
+const S={portals:[],licenses:[],audit:[],page:'dashboard',f:{q:'',portal:'',status:'',type:''},connected:false};
+
+async function loadAll(){
+  const [p,l,a]=await dbMany([
+    {sql:'SELECT * FROM portals ORDER BY id'},
+    {sql:`SELECT l.*,p.name AS portal_name,p.code AS portal_code,
+          (SELECT COUNT(*) FROM activations a WHERE a.license_id=l.id) AS devices
+          FROM licenses l LEFT JOIN portals p ON p.id=l.portal_id ORDER BY l.id DESC`},
+    {sql:'SELECT * FROM audit ORDER BY id DESC LIMIT 150'}
+  ]);
+  S.portals=p;S.licenses=l;S.audit=a;
+}
+function setConn(ok,msg){
+  S.connected=ok;const b=$('connBadge');
+  b.className='conn'+(ok?' ok':'');b.textContent=ok?'● Turso connected':(msg||'Not connected');
+}
+async function refresh(){
+  try{await loadAll();setConn(true);}catch(e){setConn(false,'Connection error');toast(e.message);}
+  render();
+}
+
+/* ============ AUTH ============ */
+function doLogin(){
+  if($('loginPass').value===LS.pass){
+    sessionStorage.setItem('lm_in','1');enter();
+  }else $('loginErr').textContent='Wrong password';
+}
+function logout(){sessionStorage.removeItem('lm_in');location.reload()}
+async function enter(){
+  $('login').classList.add('hidden');$('app').classList.remove('hidden');
+  if(!LS.dbToken){setConn(false,'Add Turso token');go('settings');return;}
+  try{await initDb();await loadAll();setConn(true);go('dashboard');}
+  catch(e){setConn(false,'Connection error');toast(e.message);go('settings');}
+}
+
+/* ============ ROUTER ============ */
+const TITLES={dashboard:'Dashboard',licenses:'Licenses',portals:'Portals',integration:'Integration',activity:'Activity Log',settings:'Settings'};
+function go(p){S.page=p;render()}
+document.querySelectorAll('aside .nav[data-p]').forEach(b=>b.onclick=()=>go(b.dataset.p));
+function render(){
+  document.querySelectorAll('aside .nav[data-p]').forEach(b=>b.classList.toggle('on',b.dataset.p===S.page));
+  $('pageTitle').textContent=TITLES[S.page];
+  ({dashboard:rDash,licenses:rLic,portals:rPortals,integration:rInteg,activity:rAct,settings:rSet})[S.page]();
+}
+
+/* ============ DASHBOARD ============ */
+function rDash(){
+  const L=S.licenses,st=l=>statusOf(l);
+  const cnt=f=>L.filter(f).length;
+  const soon=L.filter(l=>st(l)==='active'&&l.expires_at&&(new Date(l.expires_at)-new Date())<3*864e5).length;
+  const per=S.portals.map(p=>{
+    const x=L.filter(l=>l.portal_id===p.id);
+    return `<tr><td><b>${esc(p.name)}</b><div class="muted mono" style="font-size:11px">${esc(p.code)}</div></td>
+      <td>${p.enabled?badge('b-on','Enabled'):badge('b-off','Disabled')}</td>
+      <td>${x.length}</td><td>${x.filter(l=>st(l)==='active'&&l.type==='paid').length}</td>
+      <td>${x.filter(l=>st(l)==='active'&&l.type==='trial').length}</td>
+      <td>${x.filter(l=>st(l)==='expired').length}</td><td>${x.filter(l=>st(l)==='revoked').length}</td></tr>`;
+  }).join('');
+  $('view').innerHTML=`
+  <div class="grid stats">
+    <div class="card stat"><div class="n">${S.portals.length}</div><div class="l">Portals</div></div>
+    <div class="card stat"><div class="n">${L.length}</div><div class="l">Total keys</div></div>
+    <div class="card stat"><div class="n" style="color:var(--ok)">${cnt(l=>st(l)==='active'&&l.type==='paid')}</div><div class="l">Active paid</div></div>
+    <div class="card stat"><div class="n" style="color:var(--purple)">${cnt(l=>st(l)==='active'&&l.type==='trial')}</div><div class="l">Active trials</div></div>
+    <div class="card stat"><div class="n" style="color:var(--warn)">${soon}</div><div class="l">Expiring in 3 days</div></div>
+    <div class="card stat"><div class="n" style="color:var(--bad)">${cnt(l=>st(l)==='expired')}</div><div class="l">Expired</div></div>
+    <div class="card stat"><div class="n" style="color:var(--bad)">${cnt(l=>st(l)==='revoked')}</div><div class="l">Revoked</div></div>
+    <div class="card stat"><div class="n">${cnt(l=>st(l)==='unused')}</div><div class="l">Unused keys</div></div>
+  </div>
+  <div class="row" style="margin-bottom:14px"><button class="btn" onclick="genModal()">＋ Generate keys</button></div>
+  <div class="card" style="padding:0"><div class="tbl-wrap"><table>
+    <thead><tr><th>Portal</th><th>Status</th><th>Keys</th><th>Paid</th><th>Trial</th><th>Expired</th><th>Revoked</th></tr></thead>
+    <tbody>${per||'<tr><td colspan="7" class="empty">No portals yet</td></tr>'}</tbody></table></div></div>`;
+}
+
+/* ============ LICENSES ============ */
+function filtered(){
+  const f=S.f,q=f.q.toLowerCase();
+  return S.licenses.filter(l=>
+    (!f.portal||String(l.portal_id)===f.portal)&&
+    (!f.status||statusOf(l)===f.status)&&
+    (!f.type||l.type===f.type)&&
+    (!q||[l.license_key,l.customer,l.phone,l.email,l.notes].some(v=>String(v||'').toLowerCase().includes(q)))
+  );
+}
+function rLic(){
+  const f=S.f;
+  $('view').innerHTML=`
+  <div class="card" style="margin-bottom:14px"><div class="row">
+    <input class="grow" id="fq" placeholder="Search key, customer, phone…" value="${esc(f.q)}">
+    <select id="fp" style="width:auto"><option value="">All portals</option>${S.portals.map(p=>`<option value="${p.id}" ${String(p.id)===f.portal?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
+    <select id="fs" style="width:auto">${['','unused','active','expired','revoked'].map(s=>`<option value="${s}" ${f.status===s?'selected':''}>${s?s[0].toUpperCase()+s.slice(1):'All status'}</option>`).join('')}</select>
+    <select id="ft" style="width:auto">${['','trial','paid'].map(s=>`<option value="${s}" ${f.type===s?'selected':''}>${s?s[0].toUpperCase()+s.slice(1):'All types'}</option>`).join('')}</select>
+    <button class="btn" onclick="genModal()">＋ Generate</button>
+    <button class="btn sec" onclick="exportCsv()">⬇ CSV</button>
+  </div></div>
+  <div class="card" style="padding:0"><div class="tbl-wrap" id="licTbl"></div></div>`;
+  $('fq').oninput=e=>{S.f.q=e.target.value;drawLic()};
+  $('fp').onchange=e=>{S.f.portal=e.target.value;drawLic()};
+  $('fs').onchange=e=>{S.f.status=e.target.value;drawLic()};
+  $('ft').onchange=e=>{S.f.type=e.target.value;drawLic()};
+  drawLic();
+}
+function drawLic(){
+  const rows=filtered().map(l=>{
+    const s=statusOf(l);
+    return `<tr>
+      <td class="mono"><b>${esc(l.license_key)}</b></td>
+      <td>${esc(l.portal_name||'—')}</td>
+      <td>${esc(l.customer||'—')}<div class="muted" style="font-size:11px">${esc(l.phone||'')}</div></td>
+      <td>${badge(l.type==='trial'?'b-trial':'b-paid',l.type)}</td>
+      <td>${badge('b-'+s,s)}</td>
+      <td>${esc(remaining(l))}<div class="muted" style="font-size:11px">${l.expires_at?'Ends '+fmtD(l.expires_at):''}</div></td>
+      <td>${l.devices}/${l.max_devices}</td>
+      <td><div class="acts">
+        <button class="btn sec sm" onclick="copy('${esc(l.license_key)}')">Copy</button>
+        ${l.status==='revoked'
+          ?`<button class="btn sm" onclick="reinstate(${l.id})">Reinstate</button>`
+          :`<button class="btn red sm" onclick="revoke(${l.id})">Revoke</button>`}
+        <button class="btn sec sm" onclick="extend(${l.id})">Extend</button>
+        ${l.type==='trial'?`<button class="btn sec sm" onclick="upgrade(${l.id})">Make paid</button>`:''}
+        <button class="btn sec sm" onclick="resetDev(${l.id})">Reset devices</button>
+        <button class="btn sec sm" onclick="delLic(${l.id})">🗑</button>
+      </div></td></tr>`;
+  }).join('');
+  $('licTbl').innerHTML=rows
+    ?`<table><thead><tr><th>License key</th><th>Portal</th><th>Customer</th><th>Type</th><th>Status</th><th>Validity</th><th>Devices</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`
+    :'<div class="empty">No licenses match. Generate some keys to get started.</div>';
+}
+function exportCsv(){
+  const h=['license_key','portal','customer','phone','email','type','status','duration_days','activated_at','expires_at','devices','max_devices','notes'];
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const lines=[h.join(',')].concat(filtered().map(l=>[l.license_key,l.portal_name,l.customer,l.phone,l.email,l.type,statusOf(l),l.duration_days,l.activated_at,l.expires_at,l.devices,l.max_devices,l.notes].map(q).join(',')));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='licenses_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+/* generate */
+function genModal(){
+  openModal(`<h3>Generate license keys</h3>
+  <div class="form-grid">
+    <div class="full"><label>Portal</label><select id="g_portal">
+      <option value="0">All portals (one key each)</option>
+      ${S.portals.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>
+    <div><label>Type</label><select id="g_type" onchange="genType()"><option value="trial">Trial</option><option value="paid">Paid (licensed)</option></select></div>
+    <div id="g_trialBox"><label>Trial days (1–7)</label><select id="g_trial">${[1,2,3,4,5,6,7].map(d=>`<option ${d===DEFAULTS.trialDays?'selected':''}>${d}</option>`).join('')}</select></div>
+    <div id="g_paidBox" class="hidden"><label>Validity</label><select id="g_paid" onchange="genType()">
+      <option value="30">30 days</option><option value="90">90 days</option><option value="180">180 days</option>
+      <option value="365" selected>1 year</option><option value="0">Lifetime</option><option value="custom">Custom days…</option></select></div>
+    <div id="g_customBox" class="hidden"><label>Custom days</label><input id="g_custom" type="number" min="1" value="30"></div>
+    <div><label>Quantity (per portal)</label><input id="g_qty" type="number" min="1" max="50" value="1"></div>
+    <div><label>Max devices per key</label><input id="g_dev" type="number" min="1" value="${DEFAULTS.maxDevices}"></div>
+    <div><label>Customer name</label><input id="g_cust"></div>
+    <div><label>Phone</label><input id="g_phone"></div>
+    <div class="full"><label>Email</label><input id="g_email" type="email"></div>
+    <div class="full"><label>Notes</label><textarea id="g_notes" rows="2"></textarea></div>
+  </div>
+  <p class="muted" style="font-size:12px">Trial/validity clock starts on the customer's first activation, not when the key is created.</p>
+  <div class="row" style="justify-content:flex-end"><button class="btn sec" onclick="closeModal()">Cancel</button><button class="btn" onclick="doGenerate()">Generate</button></div>`);
+}
+function genType(){
+  const t=$('g_type').value;
+  $('g_trialBox').classList.toggle('hidden',t!=='trial');
+  $('g_paidBox').classList.toggle('hidden',t!=='paid');
+  $('g_customBox').classList.toggle('hidden',!(t==='paid'&&$('g_paid').value==='custom'));
+}
+async function doGenerate(){
+  try{
+    const pid=+$('g_portal').value,type=$('g_type').value;
+    const qty=Math.min(50,Math.max(1,+$('g_qty').value||1));
+    let days;
+    if(type==='trial') days=Math.min(7,Math.max(1,+$('g_trial').value||7));
+    else days=$('g_paid').value==='custom'?Math.max(1,+$('g_custom').value||1):+$('g_paid').value;
+    const targets=pid?S.portals.filter(p=>p.id===pid):S.portals;
+    if(!targets.length) return toast('No portal available');
+    const now=new Date().toISOString(),stmts=[],made=[];
+    targets.forEach(p=>{
+      for(let i=0;i<qty;i++){
+        const k=genKey();made.push({k,p:p.name});
+        stmts.push({sql:`INSERT INTO licenses(license_key,portal_id,customer,phone,email,type,duration_days,status,max_devices,notes,created_at)
+          VALUES(?,?,?,?,?,?,?,'active',?,?,?)`,
+          args:[k,p.id,val('g_cust'),val('g_phone'),val('g_email'),type,days,Math.max(1,+$('g_dev').value||1),val('g_notes'),now]});
+      }
+    });
+    stmts.push(auditStmt('GENERATE',`${made.length} ${type} key(s) ${type==='trial'?days+'d':days?days+'d':'lifetime'} for ${val('g_cust')||'—'}`));
+    await dbMany(stmts);
+    await refresh();
+    openModal(`<h3>✅ ${made.length} key(s) created</h3>
+      <div class="keybox">${made.map(m=>`${esc(m.k)} <span class="muted" style="font-size:11px">${esc(m.p)}</span>`).join('<br>')}</div>
+      <div class="row" style="justify-content:flex-end;margin-top:12px">
+        <button class="btn sec" onclick="copy('${made.map(m=>m.k).join('\\n')}')">Copy all</button>
+        <button class="btn" onclick="closeModal()">Done</button></div>`);
+  }catch(e){toast('Failed: '+e.message)}
+}
+
+/* license actions */
+const byId=id=>S.licenses.find(l=>l.id===id);
+async function revoke(id){
+  const l=byId(id),r=prompt('Revoke '+l.license_key+'?\nOptional reason (shown to customer):','');
+  if(r===null) return;
+  await act([{sql:`UPDATE licenses SET status='revoked',revoked_at=?,revoke_reason=? WHERE id=?`,args:[new Date().toISOString(),r,id]},auditStmt('REVOKE',l.license_key+(r?' — '+r:''))],'License revoked');
+}
+async function reinstate(id){
+  const l=byId(id);
+  await act([{sql:`UPDATE licenses SET status='active',revoked_at=NULL,revoke_reason=NULL WHERE id=?`,args:[id]},auditStmt('REINSTATE',l.license_key)],'License reinstated');
+}
+async function extend(id){
+  const l=byId(id),n=parseInt(prompt('Extend '+l.license_key+' by how many days?','30'),10);
+  if(!n||n<1) return;
+  let stmt;
+  if(l.activated_at&&l.expires_at){
+    const base=Math.max(Date.now(),new Date(l.expires_at).getTime());
+    stmt={sql:'UPDATE licenses SET expires_at=?,duration_days=duration_days+? WHERE id=?',args:[new Date(base+n*864e5).toISOString(),n,id]};
+  }else if(l.activated_at){return toast('Lifetime license — nothing to extend')}
+  else stmt={sql:'UPDATE licenses SET duration_days=duration_days+? WHERE id=?',args:[n,id]};
+  await act([stmt,auditStmt('EXTEND',l.license_key+' +'+n+'d')],'Extended by '+n+' day(s)');
+}
+async function upgrade(id){
+  const l=byId(id),d=prompt('Convert '+l.license_key+' to PAID.\nValidity in days (0 = lifetime):','365');
+  if(d===null) return;
+  const n=Math.max(0,parseInt(d,10)||0);
+  const exp=l.activated_at&&n>0?new Date(new Date(l.activated_at).getTime()+n*864e5).toISOString():null;
+  await act([{sql:`UPDATE licenses SET type='paid',duration_days=?,expires_at=? WHERE id=?`,args:[n,exp,id]},auditStmt('UPGRADE',l.license_key+' → paid '+(n?n+'d':'lifetime'))],'Converted to paid');
+}
+async function resetDev(id){
+  const l=byId(id);if(!confirm('Clear all registered devices for '+l.license_key+'?'))return;
+  await act([{sql:'DELETE FROM activations WHERE license_id=?',args:[id]},auditStmt('RESET_DEVICES',l.license_key)],'Devices cleared');
+}
+async function delLic(id){
+  const l=byId(id);if(!confirm('Permanently delete '+l.license_key+'?'))return;
+  await act([{sql:'DELETE FROM activations WHERE license_id=?',args:[id]},{sql:'DELETE FROM licenses WHERE id=?',args:[id]},auditStmt('DELETE',l.license_key)],'License deleted');
+}
+async function act(stmts,msg){
+  try{await dbMany(stmts);await refresh();toast(msg)}catch(e){toast('Failed: '+e.message)}
+}
+
+/* ============ PORTALS ============ */
+function rPortals(){
+  const rows=S.portals.map(p=>`<tr>
+    <td><b>${esc(p.name)}</b></td><td class="mono">${esc(p.code)}</td>
+    <td class="wrap"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a></td>
+    <td>${p.enabled?badge('b-on','Enabled'):badge('b-off','Disabled')}</td>
+    <td>${S.licenses.filter(l=>l.portal_id===p.id).length}</td>
+    <td><div class="acts">
+      <button class="btn sec sm" onclick="portalModal(${p.id})">Edit</button>
+      <button class="btn sec sm" onclick="togglePortal(${p.id})">${p.enabled?'Disable':'Enable'}</button>
+      <button class="btn red sm" onclick="delPortal(${p.id})">Delete</button></div></td></tr>`).join('');
+  $('view').innerHTML=`
+  <div class="row" style="margin-bottom:14px"><button class="btn" onclick="portalModal()">＋ Add portal</button>
+    <button class="btn sec" onclick="restoreDefaults()">Restore default portals</button></div>
+  <div class="card" style="padding:0"><div class="tbl-wrap"><table>
+    <thead><tr><th>Name</th><th>Code</th><th>URL</th><th>Status</th><th>Keys</th><th>Actions</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="6" class="empty">No portals</td></tr>'}</tbody></table></div></div>
+  <p class="muted" style="font-size:12px">Disabling a portal blocks every key for it immediately (kill-switch).</p>`;
+}
+function portalModal(id){
+  const p=id?S.portals.find(x=>x.id===id):{name:'',code:'',url:''};
+  openModal(`<h3>${id?'Edit':'Add'} portal</h3>
+  <div class="form-grid">
+    <div class="full"><label>Portal name</label><input id="p_name" value="${esc(p.name)}"></div>
+    <div><label>Code (unique, used in guard script)</label><input id="p_code" value="${esc(p.code)}" ${id?'readonly':''} style="text-transform:uppercase"></div>
+    <div class="full"><label>URL</label><input id="p_url" value="${esc(p.url)}" placeholder="https://"></div>
+  </div>
+  <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="closeModal()">Cancel</button><button class="btn" onclick="savePortal(${id||0})">Save</button></div>`);
+  if(!id) $('p_name').oninput=e=>{$('p_code').value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)};
+}
+async function savePortal(id){
+  const name=val('p_name'),code=val('p_code').toUpperCase().replace(/[^A-Z0-9_]/g,''),url=val('p_url');
+  if(!name||!code) return toast('Name and code are required');
+  try{
+    if(id) await dbMany([{sql:'UPDATE portals SET name=?,url=? WHERE id=?',args:[name,url,id]},auditStmt('PORTAL_EDIT',name)]);
+    else await dbMany([{sql:'INSERT INTO portals(name,code,url,enabled,created_at) VALUES(?,?,?,1,?)',args:[name,code,url,new Date().toISOString()]},auditStmt('PORTAL_ADD',name)]);
+    closeModal();await refresh();toast('Portal saved');
+  }catch(e){toast(/UNIQUE/i.test(e.message)?'Code already exists':'Failed: '+e.message)}
+}
+async function togglePortal(id){
+  const p=S.portals.find(x=>x.id===id);
+  await act([{sql:'UPDATE portals SET enabled=? WHERE id=?',args:[p.enabled?0:1,id]},auditStmt(p.enabled?'PORTAL_DISABLE':'PORTAL_ENABLE',p.name)],p.enabled?'Portal disabled':'Portal enabled');
+}
+async function delPortal(id){
+  const p=S.portals.find(x=>x.id===id),n=S.licenses.filter(l=>l.portal_id===id).length;
+  if(!confirm(`Delete "${p.name}"${n?` and its ${n} license key(s)`:''}? This cannot be undone.`))return;
+  await act([
+    {sql:'DELETE FROM activations WHERE license_id IN (SELECT id FROM licenses WHERE portal_id=?)',args:[id]},
+    {sql:'DELETE FROM licenses WHERE portal_id=?',args:[id]},
+    {sql:'DELETE FROM portals WHERE id=?',args:[id]},
+    auditStmt('PORTAL_DELETE',p.name)],'Portal deleted');
+}
+async function restoreDefaults(){
+  if(!confirm('Re-add any missing default portals?'))return;
+  await act([...DEFAULT_PORTALS.map(p=>({sql:'INSERT OR IGNORE INTO portals(name,code,url,enabled,created_at) VALUES(?,?,?,1,?)',args:[p.name,p.code,p.url,new Date().toISOString()]})),auditStmt('PORTAL_RESTORE','defaults')],'Defaults restored');
+}
+
+/* ============ INTEGRATION (guard script) ============ */
+function guard(API,PORTAL){
+  /* License Guard — paste before </body> of the portal. Talks to your License API; no database token in this script. */
+  const GRACE=864e5,KEY='lm_key_'+PORTAL,OKT='lm_ok_'+PORTAL;
+  let dev=localStorage.getItem('lm_dev');
+  if(!dev){dev=crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random();localStorage.setItem('lm_dev',dev);}
+  const norm=k=>{const d=String(k||'').replace(/\D/g,'');return d.length===16?d.match(/\d{4}/g).join('-'):null};
+  async function check(k){
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,portal:PORTAL,device:dev})});
+    if(r.status>=500)throw new Error('server');
+    return r.json();
+  }
+  function lock(msg){
+    let o=document.getElementById('lm_ov');
+    if(!o){
+      o=document.createElement('div');o.id='lm_ov';
+      o.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#0f172a;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;padding:16px';
+      o.innerHTML='<div style="background:#fff;border-radius:16px;padding:28px;max-width:380px;width:100%;text-align:center"><div style="font-size:36px">🔐</div><h2 style="margin:6px 0">License Required</h2><p id="lm_m" style="color:#64748b;margin:0 0 16px;font-size:14px"></p><input id="lm_in" placeholder="0000-0000-0000-0000" maxlength="19" inputmode="numeric" style="width:100%;box-sizing:border-box;padding:12px;font-size:18px;text-align:center;letter-spacing:2px;border:1px solid #cbd5e1;border-radius:10px"><button id="lm_bt" style="margin-top:12px;width:100%;padding:12px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-size:15px;cursor:pointer">Activate</button></div>';
+      document.body.appendChild(o);
+      document.documentElement.style.overflow='hidden';
+      document.getElementById('lm_bt').onclick=()=>{const k=norm(document.getElementById('lm_in').value);if(!k)return lock('Key must be 16 digits.');run(k)};
+    }
+    document.getElementById('lm_m').textContent=msg||'Enter your 16-digit license key to continue.';
+  }
+  function unlock(){const o=document.getElementById('lm_ov');if(o)o.remove();document.documentElement.style.overflow='';}
+  function banner(r){
+    if(r.type!=='trial'||!r.expires_at)return;
+    let b=document.getElementById('lm_bn');
+    if(!b){b=document.createElement('div');b.id='lm_bn';b.style.cssText='position:fixed;bottom:10px;right:10px;z-index:99999;background:#f59e0b;color:#000;padding:6px 12px;border-radius:20px;font:12px system-ui';document.body.appendChild(b);}
+    b.textContent='Trial: '+r.days_left+' day(s) left';
+  }
+  async function run(k){
+    try{
+      const r=await check(k);
+      if(r.ok){localStorage.setItem(KEY,k);localStorage.setItem(OKT,String(Date.now()));unlock();banner(r);}
+      else{localStorage.removeItem(KEY);lock(r.m);}
+    }catch(e){
+      if(localStorage.getItem(KEY)&&Date.now()-Number(localStorage.getItem(OKT)||0)<GRACE)return unlock();
+      lock('Cannot verify license. Check your internet connection.');
+    }
+  }
+  function start(){
+    const k=localStorage.getItem(KEY);
+    if(k){lock('Verifying license…');run(k);}else lock();
+    setInterval(()=>{const k=localStorage.getItem(KEY);if(k)run(k)},600000);
+  }
+  if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
+}
+function snippet(p){
+  return '<script>\n('+guard.toString()+')('+JSON.stringify(LS.apiUrl)+','+JSON.stringify(p.code)+');\n</'+'script>';
+}
+function rInteg(){
+  $('view').innerHTML=`
+  <div class="note" style="margin-bottom:14px"><b>How it works:</b> the script below talks to your License API (<span class="mono">${esc(LS.apiUrl)}</span>), which holds the Turso token server-side — nothing secret is exposed in the portal. Set the endpoint in Settings after deploying <span class="mono">license-api</span>. Revocation, expiry, device limits and the portal kill-switch are all enforced by the API.</div>
+  <div class="card"><div class="row" style="margin-bottom:12px">
+    <select id="ip" class="grow" onchange="drawSnip()">${S.portals.map(p=>`<option value="${p.id}">${esc(p.name)} (${esc(p.code)})</option>`).join('')}</select>
+    <button class="btn" onclick="copy(window._snip)">Copy script</button></div>
+    <pre id="snip"></pre>
+    <p class="muted" style="font-size:12px">Paste right before <span class="mono">&lt;/body&gt;</span> of the selected portal and redeploy. Until a valid 16-digit key is entered, the portal shows a full-screen lock. If a device is offline, access continues for up to 24 hours from its last successful check.</p></div>`;
+  drawSnip();
+}
+function drawSnip(){
+  const p=S.portals.find(x=>String(x.id)===$('ip').value);
+  if(!p){$('snip').textContent='Add a portal first';return}
+  window._snip=snippet(p);$('snip').textContent=window._snip;
+}
+
+/* ============ ACTIVITY ============ */
+function rAct(){
+  const rows=S.audit.map(a=>`<tr><td>${fmt(a.ts)}</td><td>${badge('b-unused',a.action)}</td><td class="wrap">${esc(a.detail)}</td></tr>`).join('');
+  $('view').innerHTML=`<div class="card" style="padding:0"><div class="tbl-wrap"><table>
+    <thead><tr><th>When</th><th>Action</th><th>Detail</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="3" class="empty">No activity yet</td></tr>'}</tbody></table></div></div>`;
+}
+
+/* ============ SETTINGS ============ */
+function rSet(){
+  $('view').innerHTML=`
+  <div class="card" style="max-width:640px">
+    <h3 style="margin-top:0">Turso database</h3>
+    <div class="grid">
+      <div><label>Database URL</label><input id="s_url" value="${esc(LS.dbUrl)}"></div>
+      <div><label>Auth token</label><input id="s_token" type="password" value="${esc(LS.dbToken)}" placeholder="Paste Turso token"></div>
+      <div class="row"><button class="btn" onclick="saveConn()">Save &amp; connect</button>
+        <button class="btn sec" onclick="resetConn()">Reset to defaults</button></div>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+    <h3>License API</h3>
+    <div class="row"><input class="grow" id="s_api" value="${esc(LS.apiUrl)}" placeholder="https://your-project.vercel.app/api/license"><button class="btn" onclick="saveApi()">Save</button></div>
+    <p class="muted" style="font-size:12px">The endpoint customers' portals call. Deploy the <span class="mono">license-api</span> folder to Vercel first.</p>
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+    <h3>Admin password</h3>
+    <div class="row"><input class="grow" id="s_pass" type="password" placeholder="New password (min 6 chars)"><button class="btn" onclick="savePass()">Update</button></div>
+    <p class="muted" style="font-size:12px">Stored in this browser. Default: <span class="mono">${esc(DEFAULTS.adminPass)}</span> — change it after first login.</p>
+  </div>`;
+}
+async function saveConn(){
+  localStorage.setItem('lm_url',val('s_url'));localStorage.setItem('lm_token',$('s_token').value.trim());
+  try{await initDb();await loadAll();setConn(true);toast('Connected — tables ready');go('dashboard');}
+  catch(e){setConn(false,'Connection error');toast(e.message)}
+}
+function saveApi(){localStorage.setItem('lm_api',val('s_api'));toast('License API URL saved')}
+function resetConn(){localStorage.removeItem('lm_url');localStorage.removeItem('lm_token');localStorage.removeItem('lm_api');setConn(false,'Not connected');rSet();toast('Defaults restored')}
+function savePass(){
+  const p=$('s_pass').value;if(p.length<6)return toast('Min 6 characters');
+  localStorage.setItem('lm_pass',p);$('s_pass').value='';toast('Password updated');
+}
+
+/* ============ BOOT ============ */
+if(sessionStorage.getItem('lm_in')) enter();
+</script>
+</body>
+</html>
